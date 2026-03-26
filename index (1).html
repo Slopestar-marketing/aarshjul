@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marketing Årshjul — Slopestar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f4;--bg3:#eceae6;
+  --text:#1a1a18;--text2:#5a5a56;--text3:#9a9a94;
+  --border:#e0ddd6;--border2:#c8c5be;
+  --danger:#E24B4A;
+  --radius:8px;--radius-lg:12px;
+  --cell-w:28px;
+  --row-h:48px;
+  --label-w:150px;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1c1c1a;--bg2:#252522;--bg3:#2e2e2a;
+    --text:#e8e6e0;--text2:#a8a89e;--text3:#686864;
+    --border:#38382e;--border2:#4a4a40;
+  }
+}
+html,body{height:100%;background:var(--bg);color:var(--text)}
+body{padding:0;overflow-x:hidden}
+#app{display:flex;flex-direction:column;height:100vh;min-height:600px}
+
+.topbar{flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 20px 10px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+.topbar h1{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.year-btn{font-size:12px;padding:4px 13px;border-radius:20px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.year-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.save-badge{font-size:11px;color:var(--text3);margin-left:auto}
+
+.board-tabs{flex:0 0 auto;display:flex;gap:5px;flex-wrap:wrap;padding:8px 20px;border-bottom:0.5px solid var(--border);background:var(--bg);align-items:center}
+.btab{font-size:11px;padding:4px 11px;border-radius:16px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s}
+.btab.active{background:var(--bg);border-color:var(--border2);color:var(--text);font-weight:500}
+.btab .bdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.btab-add{color:var(--text3);border-style:dashed}
+
+.tl-container{flex:1 1 auto;display:flex;overflow:hidden;min-height:0}
+
+.label-col{flex:0 0 var(--label-w);display:flex;flex-direction:column;border-right:0.5px solid var(--border2);background:var(--bg);z-index:10}
+.label-col .lc-header{flex:0 0 52px;border-bottom:0.5px solid var(--border);display:flex;align-items:flex-end;padding:0 12px 8px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+.label-row{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 12px;height:var(--row-h);border-bottom:0.5px solid var(--border);font-size:12px;font-weight:500;color:var(--text2)}
+.label-row .ldot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+.grid-scroll{flex:1 1 auto;overflow-x:auto;overflow-y:auto;position:relative}
+.grid-inner{position:relative;display:inline-flex;flex-direction:column;min-width:100%}
+
+.grid-header{flex:0 0 52px;display:flex;flex-direction:column;position:sticky;top:0;z-index:8;background:var(--bg);border-bottom:0.5px solid var(--border2)}
+.month-row{display:flex;height:28px}
+.month-cell{flex:none;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:var(--text2);border-left:1.5px solid var(--border2);letter-spacing:.02em;overflow:hidden;white-space:nowrap;background:var(--bg)}
+.week-row{display:flex;height:24px;align-items:center}
+.week-cell-h{flex:none;width:var(--cell-w);font-size:9px;color:var(--text3);text-align:center;border-left:0.5px solid transparent;line-height:24px}
+.week-cell-h.ms{border-left:1.5px solid var(--border2)}
+
+.data-row{flex:0 0 var(--row-h);display:flex;position:relative;border-bottom:0.5px solid var(--border)}
+.data-row:last-child{border-bottom:none}
+.data-row-bg{display:flex;position:absolute;inset:0}
+.week-bg{flex:none;width:var(--cell-w);height:100%;border-left:0.5px solid transparent;cursor:pointer;transition:background .1s}
+.week-bg:hover{background:rgba(128,128,128,.1)}
+.week-bg.ms{border-left:1.5px solid var(--border)}
+.week-bg.today{background:rgba(83,74,183,.07)}
+.today-line{position:absolute;top:0;bottom:0;width:2px;background:#E24B4A;opacity:.75;z-index:5;pointer-events:none}
+.act-block{position:absolute;top:5px;bottom:5px;border-radius:5px;cursor:pointer;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:4;transition:opacity .15s;user-select:none;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.act-block:hover{opacity:.82;z-index:6}
+
+.bottom-panel{flex:0 0 auto;border-top:0.5px solid var(--border2);background:var(--bg);padding:12px 20px;min-height:68px;max-height:240px;overflow-y:auto}
+.bp-hint{color:var(--text3);font-size:12px;font-style:italic;padding:6px 0}
+.bp-inner h3{font-size:13px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.evt-list{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.evt-list li{display:flex;align-items:center;gap:6px;font-size:11px;background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;padding:3px 10px 3px 7px}
+.edot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.del{cursor:pointer;color:var(--text3);font-size:14px;border:none;background:none;padding:0 1px;margin-left:2px;line-height:1}
+.del:hover{color:var(--danger)}
+.bp-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:8px;border-top:0.5px solid var(--border)}
+.bp-form input,.bp-form select{font-size:12px;padding:5px 9px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text)}
+.bp-form input{flex:1 1 160px;min-width:100px}
+.bp-form button{font-size:12px;padding:5px 14px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;white-space:nowrap}
+.bp-form button:hover{background:var(--bg2)}
+.bp-edit{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bp-edit input,.bp-edit select{font-size:12px;padding:5px 9px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text)}
+.bp-edit input{flex:1 1 160px}
+.bp-edit button{font-size:12px;padding:5px 14px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;white-space:nowrap}
+.bp-edit button:hover{background:var(--bg2)}
+.bp-edit button.danger{color:var(--danger)}
+.lbl{font-size:11px;color:var(--text3);white-space:nowrap}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:18px;width:310px;max-width:92vw}
+.modal h3{font-size:13px;font-weight:500;margin-bottom:10px}
+.modal label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;margin-top:8px}
+.modal input,.modal select{width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);margin-bottom:2px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal-btns button{font-size:12px;padding:5px 14px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer}
+.modal-btns .confirm{background:var(--text);color:var(--bg);border-color:var(--text)}
+.chk-row{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:400;margin-top:5px;cursor:pointer}
+.chk-row input{width:auto;margin:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <h1>Marketing Årshjul</h1>
+    <button class="year-btn active" id="btn2026" onclick="setYear(2026)">2026</button>
+    <button class="year-btn" id="btn2027" onclick="setYear(2027)">2027</button>
+    <span class="save-badge" id="save-ind"></span>
+  </div>
+  <div class="board-tabs" id="board-tabs"></div>
+  <div class="tl-container">
+    <div class="label-col" id="label-col"></div>
+    <div class="grid-scroll" id="grid-scroll">
+      <div class="grid-inner" id="grid-inner"></div>
+    </div>
+  </div>
+  <div class="bottom-panel" id="bottom-panel">
+    <p class="bp-hint">Klik på en uge i tidslinjen for at tilføje aktiviteter — klik på en blok for at redigere.</p>
+  </div>
+</div>
+<div id="modal-container"></div>
+
+<script>
+const CATS=[
+  {id:'kampagner', name:'Kampagner',       color:'#534AB7'},
+  {id:'some',      name:'SoMe & content',  color:'#0F6E56'},
+  {id:'events',    name:'Events & messer', color:'#993C1D'},
+  {id:'email',     name:'Email & nyh.',    color:'#185FA5'},
+  {id:'pr',        name:'PR & presse',     color:'#993556'},
+  {id:'paid',      name:'Paid ads',        color:'#BA7517'},
+];
+const DEFAULT_BOARDS=[
+  {id:'all',name:'Samlet overblik',catIds:CATS.map(c=>c.id)},
+  ...CATS.map(c=>({id:'cat_'+c.id,name:c.name,catIds:[c.id]})),
+];
+const MONTHS=['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December'];
+const MONTHS_S=['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+const STOR='mktaarshjul-v2';
+const CELL=28;
+
+let S={year:2026,boardId:'all',boards:JSON.parse(JSON.stringify(DEFAULT_BOARDS)),acts:{},nextActId:1};
+
+function persist(){
+  try{localStorage.setItem(STOR,JSON.stringify({boards:S.boards,acts:S.acts,nextActId:S.nextActId}));showSave('Gemt ✓');}
+  catch(e){showSave('Gem fejlede');}
+}
+function loadData(){
+  try{const r=localStorage.getItem(STOR);if(r){const d=JSON.parse(r);if(d.boards)S.boards=d.boards;if(d.acts)S.acts=d.acts;if(d.nextActId)S.nextActId=d.nextActId;}}catch(e){}
+  render();renderPanel();
+}
+function showSave(m){const el=document.getElementById('save-ind');el.textContent=m;setTimeout(()=>el.textContent='',2200);}
+
+function isoWeek(d){const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-day);const ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1));return Math.ceil((((dt-ys)/86400000)+1)/7);}
+function weeksInYear(y){const d=new Date(y,11,31);const w=isoWeek(d);return w===1?isoWeek(new Date(y,11,24)):w;}
+function weekMonday(y,w){const j=new Date(y,0,4);const jd=j.getDay()||7;const m=new Date(j);m.setDate(j.getDate()-jd+1+(w-1)*7);return m;}
+function weekMonth(y,w){return weekMonday(y,w).getMonth();}
+function buildWeeks(y){return Array.from({length:weeksInYear(y)},(_,i)=>i+1);}
+
+function actKey(y,catId,id){return`${y}-${catId}-${id}`;}
+function getActs(y,catId){return Object.values(S.acts).filter(a=>a.year===y&&a.catId===catId);}
+function currentBoard(){return S.boards.find(b=>b.id===S.boardId)||S.boards[0];}
+function visibleCats(){const b=currentBoard();return CATS.filter(c=>b.catIds.includes(c.id));}
+function textColor(hex){const h=hex.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return(0.299*r+0.587*g+0.114*b)/255>0.55?'#222':'#fff';}
+
+function render(){renderBoardTabs();renderTimeline();}
+
+function renderBoardTabs(){
+  const el=document.getElementById('board-tabs');
+  el.innerHTML=S.boards.map(b=>{
+    const cat=CATS.find(c=>'cat_'+c.id===b.id);
+    const color=cat?cat.color:'#534AB7';
+    return`<button class="btab${b.id===S.boardId?' active':''}" onclick="setBoard('${b.id}')"><span class="bdot" style="background:${color}"></span>${b.name}</button>`;
+  }).join('')+`<button class="btab btab-add" onclick="openAddBoard()">+ Nyt board</button>`;
+}
+
+function renderTimeline(){
+  const y=S.year;
+  const weeks=buildWeeks(y);
+  const nW=weeks.length;
+  const cats=visibleCats();
+
+  const monthSpans=[];
+  let cur=weekMonth(y,weeks[0]),start=0;
+  for(let i=1;i<=nW;i++){
+    const m=i<nW?weekMonth(y,weeks[i]):-1;
+    if(m!==cur||i===nW){monthSpans.push({month:cur,start,end:i-1});cur=m;start=i;}
+  }
+
+  const today=new Date();
+  const todayW=today.getFullYear()===y?isoWeek(today):null;
+  const todayIdx=todayW?weeks.indexOf(todayW):-1;
+  const totalW=nW*CELL;
+
+  const lc=document.getElementById('label-col');
+  lc.innerHTML=`<div class="lc-header">Kategori</div>`+
+    cats.map(cat=>`<div class="label-row"><span>${cat.name}</span><span class="ldot" style="background:${cat.color}"></span></div>`).join('');
+
+  const monthRowHtml=monthSpans.map(ms=>{
+    const w=(ms.end-ms.start+1)*CELL;
+    return`<div class="month-cell" style="width:${w}px">${w>55?MONTHS[ms.month]:MONTHS_S[ms.month]}</div>`;
+  }).join('');
+
+  const weekRowHtml=weeks.map((w,i)=>{
+    const isMS=i>0&&weekMonth(y,weeks[i])!==weekMonth(y,weeks[i-1]);
+    return`<div class="week-cell-h${isMS?' ms':''}">${w%2===1?w:''}</div>`;
+  }).join('');
+
+  const rowsHtml=cats.map(cat=>{
+    const acts=getActs(y,cat.id);
+    const bgHtml=weeks.map((w,i)=>{
+      const isMS=i>0&&weekMonth(y,weeks[i])!==weekMonth(y,weeks[i-1]);
+      const isToday=i===todayIdx;
+      return`<div class="week-bg${isMS?' ms':''}${isToday?' today':''}" onclick="clickWeek('${cat.id}',${w})"></div>`;
+    }).join('');
+    const todayHtml=todayIdx>=0?`<div class="today-line" style="left:${todayIdx*CELL+CELL/2}px"></div>`:'';
+    const actsHtml=acts.map(act=>{
+      const s=weeks.indexOf(act.weekStart);if(s<0)return'';
+      const e=weeks.indexOf(act.weekEnd);
+      const eIdx=e<0?nW-1:e;
+      const left=s*CELL+1,width=(eIdx-s+1)*CELL-2;
+      const bg=act.color||cat.color;
+      return`<div class="act-block" style="left:${left}px;width:${width}px;background:${bg};color:${textColor(bg)}" title="${act.title} (uge ${act.weekStart}–${act.weekEnd})" onclick="clickAct(event,'${act.id}','${cat.id}')">${act.title}</div>`;
+    }).join('');
+    return`<div class="data-row" style="width:${totalW}px"><div class="data-row-bg">${bgHtml}</div>${todayHtml}${actsHtml}</div>`;
+  }).join('');
+
+  const gi=document.getElementById('grid-inner');
+  gi.style.width=totalW+'px';
+  gi.innerHTML=`<div class="grid-header" style="width:${totalW}px"><div class="month-row">${monthRowHtml}</div><div class="week-row">${weekRowHtml}</div></div>${rowsHtml}`;
+
+  if(todayIdx>=0){
+    const gs=document.getElementById('grid-scroll');
+    setTimeout(()=>gs.scrollLeft=Math.max(0,todayIdx*CELL-180),50);
+  }
+}
+
+let PS={mode:'hint',catId:null,week:null,actId:null};
+
+function renderPanel(){
+  const el=document.getElementById('bottom-panel');
+  const y=S.year;
+  if(PS.mode==='hint'){el.innerHTML='<p class="bp-hint">Klik på en uge i tidslinjen for at tilføje aktiviteter — klik på en blok for at redigere.</p>';return;}
+
+  if(PS.mode==='week'){
+    const cat=CATS.find(c=>c.id===PS.catId);
+    const acts=getActs(y,PS.catId).filter(a=>a.weekStart<=PS.week&&a.weekEnd>=PS.week);
+    const catOpts=CATS.map(c=>`<option value="${c.id}"${c.id===PS.catId?' selected':''}>${c.name}</option>`).join('');
+    const wOpts=buildWeeks(y).map(w=>`<option value="${w}"${w===PS.week?' selected':''}>${w}</option>`).join('');
+    el.innerHTML=`<div class="bp-inner">
+      <h3><span style="width:9px;height:9px;border-radius:2px;background:${cat.color};display:inline-block"></span>${cat.name} — uge ${PS.week}</h3>
+      ${acts.length?`<ul class="evt-list">${acts.map(a=>`<li><span class="edot" style="background:${a.color||cat.color}"></span>${a.title}<span style="font-size:10px;color:var(--text3)">uge ${a.weekStart}–${a.weekEnd}</span><button class="del" onclick="deleteAct('${a.id}','${cat.id}')">×</button></li>`).join('')}</ul>`:''}
+      <div class="bp-form">
+        <input type="text" id="act-title" placeholder="Aktivitetsnavn..." maxlength="60"/>
+        <select id="act-cat">${catOpts}</select>
+        <span class="lbl">Uge</span>
+        <select id="act-ws">${wOpts}</select>
+        <span class="lbl">til</span>
+        <select id="act-we">${wOpts}</select>
+        <button onclick="addAct()">+ Tilføj</button>
+        <button onclick="PS.mode='hint';renderPanel()" style="color:var(--text3)">Luk</button>
+      </div>
+    </div>`;
+    const ti=document.getElementById('act-title');ti.focus();
+    ti.addEventListener('keydown',e=>{if(e.key==='Enter')addAct();});
+    return;
+  }
+
+  if(PS.mode==='act'){
+    const act=Object.values(S.acts).find(a=>a.id===PS.actId);
+    if(!act){PS.mode='hint';renderPanel();return;}
+    const catOpts=CATS.map(c=>`<option value="${c.id}"${c.id===act.catId?' selected':''}>${c.name}</option>`).join('');
+    const wOptsS=buildWeeks(y).map(w=>`<option value="${w}"${w===act.weekStart?' selected':''}>${w}</option>`).join('');
+    const wOptsE=buildWeeks(y).map(w=>`<option value="${w}"${w===act.weekEnd?' selected':''}>${w}</option>`).join('');
+    el.innerHTML=`<div class="bp-inner">
+      <h3>Rediger aktivitet</h3>
+      <div class="bp-edit">
+        <input type="text" id="edit-title" value="${act.title}" maxlength="60"/>
+        <select id="edit-cat">${catOpts}</select>
+        <span class="lbl">Uge</span>
+        <select id="edit-ws">${wOptsS}</select>
+        <span class="lbl">til</span>
+        <select id="edit-we">${wOptsE}</select>
+        <button onclick="saveAct('${act.id}')">Gem</button>
+        <button class="danger" onclick="deleteAct('${act.id}','${act.catId}')">Slet</button>
+        <button onclick="PS.mode='hint';renderPanel()" style="color:var(--text3)">Luk</button>
+      </div>
+    </div>`;
+    return;
+  }
+}
+
+function setYear(y){
+  S.year=y;
+  ['2026','2027'].forEach(yr=>document.getElementById('btn'+yr).className='year-btn'+(y===parseInt(yr)?' active':''));
+  PS={mode:'hint'};render();renderPanel();
+}
+function setBoard(id){S.boardId=id;PS={mode:'hint'};render();renderPanel();}
+function clickWeek(catId,week){PS={mode:'week',catId,week};renderPanel();}
+function clickAct(e,actId,catId){e.stopPropagation();PS={mode:'act',actId,catId};renderPanel();}
+
+function addAct(){
+  const title=document.getElementById('act-title').value.trim();if(!title)return;
+  const catId=document.getElementById('act-cat').value;
+  const ws=parseInt(document.getElementById('act-ws').value);
+  const we=parseInt(document.getElementById('act-we').value);
+  const id='a'+S.nextActId++;
+  S.acts[actKey(S.year,catId,id)]={id,catId,year:S.year,title,weekStart:Math.min(ws,we),weekEnd:Math.max(ws,we),color:CATS.find(c=>c.id===catId)?.color};
+  persist();PS={mode:'week',catId,week:Math.min(ws,we)};render();renderPanel();
+}
+
+function saveAct(actId){
+  const act=Object.values(S.acts).find(a=>a.id===actId);if(!act)return;
+  const newTitle=document.getElementById('edit-title').value.trim();
+  const newCat=document.getElementById('edit-cat').value;
+  const ws=parseInt(document.getElementById('edit-ws').value);
+  const we=parseInt(document.getElementById('edit-we').value);
+  if(!newTitle)return;
+  if(newCat!==act.catId){delete S.acts[actKey(S.year,act.catId,act.id)];act.catId=newCat;act.color=CATS.find(c=>c.id===newCat)?.color;S.acts[actKey(S.year,newCat,act.id)]=act;}
+  act.title=newTitle;act.weekStart=Math.min(ws,we);act.weekEnd=Math.max(ws,we);
+  persist();PS={mode:'hint'};render();renderPanel();
+}
+
+function deleteAct(actId,catId){
+  const k=Object.keys(S.acts).find(k=>S.acts[k].id===actId);
+  if(k)delete S.acts[k];
+  persist();PS={mode:'hint'};render();renderPanel();
+}
+
+function openAddBoard(){
+  document.getElementById('modal-container').innerHTML=`<div class="modal-bg" onclick="closeModal(event)"><div class="modal" onclick="event.stopPropagation()">
+    <h3>Nyt board</h3>
+    <label>Navn</label><input type="text" id="m-name" placeholder="Fx Q1 2026, Black Friday..." maxlength="40"/>
+    <label>Vis kategorier</label>
+    ${CATS.map(c=>`<label class="chk-row"><input type="checkbox" value="${c.id}" checked/> ${c.name}</label>`).join('')}
+    <div class="modal-btns"><button onclick="closeModal()">Annuller</button><button class="confirm" onclick="createBoard()">Opret</button></div>
+  </div></div>`;
+  document.getElementById('m-name').focus();
+}
+function closeModal(e){if(!e||e.target.classList.contains('modal-bg'))document.getElementById('modal-container').innerHTML='';}
+function createBoard(){
+  const name=document.getElementById('m-name').value.trim();if(!name)return;
+  const catIds=[...document.querySelectorAll('#modal-container input[type=checkbox]:checked')].map(cb=>cb.value);
+  if(!catIds.length)return;
+  const id='custom_'+Date.now();
+  S.boards.push({id,name,catIds});S.boardId=id;
+  document.getElementById('modal-container').innerHTML='';
+  persist();render();renderPanel();
+}
+
+loadData();
+</script>
+</body>
+</html>
